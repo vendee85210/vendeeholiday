@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Calendar, Users } from 'lucide-react';
+import { Calendar, Users, Search as SearchIcon } from 'lucide-react';
 import { Card, CardContent } from './ui/card';
+import { useToast } from '../hooks/use-toast';
+import { propertiesAPI } from '../services/api';
 
-const Hero = () => {
-  const [selectedRegion, setSelectedRegion] = useState('All Regions');
-  const [selectedGuests, setSelectedGuests] = useState('1 guest');
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
+const Hero = ({ onSearchResults }) => {
+  const [searchFilters, setSearchFilters] = useState({
+    region: 'All Regions',
+    check_in: '',
+    check_out: '',
+    guests: 1
+  });
+  const [searching, setSearching] = useState(false);
+  const { toast } = useToast();
 
   const regions = [
     'All Regions',
@@ -20,9 +26,47 @@ const Hero = () => {
     'Island of Corsica'
   ];
 
-  const guestOptions = Array.from({ length: 20 }, (_, i) => 
-    i === 19 ? '20+ guests' : `${i + 1} guest${i > 0 ? 's' : ''}`
-  );
+  const handleSearch = async () => {
+    setSearching(true);
+    
+    try {
+      const searchParams = {
+        ...(searchFilters.region !== 'All Regions' && { region: searchFilters.region }),
+        ...(searchFilters.check_in && { check_in: searchFilters.check_in }),
+        ...(searchFilters.check_out && { check_out: searchFilters.check_out }),
+        ...(searchFilters.guests > 1 && { guests: searchFilters.guests }),
+      };
+
+      const response = await propertiesAPI.search(searchParams);
+      const results = response.data;
+
+      if (results.properties.length === 0) {
+        toast({
+          title: "No properties found",
+          description: "Try adjusting your search criteria",
+        });
+      } else {
+        toast({
+          title: "Search completed!",
+          description: `Found ${results.total_count} properties matching your criteria`,
+        });
+        
+        // If parent component provided a callback to handle results
+        if (onSearchResults) {
+          onSearchResults(results);
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: "Search failed",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    } finally {
+      setSearching(false);
+    }
+  };
 
   return (
     <section className="relative h-screen flex items-center justify-center">
@@ -54,8 +98,8 @@ const Hero = () => {
                 <label className="text-sm font-medium text-gray-700">Region</label>
                 <select 
                   className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
-                  value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  value={searchFilters.region}
+                  onChange={(e) => setSearchFilters({...searchFilters, region: e.target.value})}
                 >
                   {regions.map((region) => (
                     <option key={region} value={region}>{region}</option>
@@ -70,8 +114,9 @@ const Hero = () => {
                   <input
                     type="date"
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
-                    value={checkIn}
-                    onChange={(e) => setCheckIn(e.target.value)}
+                    value={searchFilters.check_in}
+                    onChange={(e) => setSearchFilters({...searchFilters, check_in: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
                   />
                   <Calendar className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -84,8 +129,9 @@ const Hero = () => {
                   <input
                     type="date"
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
+                    value={searchFilters.check_out}
+                    onChange={(e) => setSearchFilters({...searchFilters, check_out: e.target.value})}
+                    min={searchFilters.check_in || new Date().toISOString().split('T')[0]}
                   />
                   <Calendar className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -97,11 +143,13 @@ const Hero = () => {
                 <div className="relative">
                   <select 
                     className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-gray-900"
-                    value={selectedGuests}
-                    onChange={(e) => setSelectedGuests(e.target.value)}
+                    value={searchFilters.guests}
+                    onChange={(e) => setSearchFilters({...searchFilters, guests: parseInt(e.target.value)})}
                   >
-                    {guestOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {i === 19 ? '20+ guests' : `${i + 1} guest${i > 0 ? 's' : ''}`}
+                      </option>
                     ))}
                   </select>
                   <Users className="absolute right-3 top-3 h-5 w-5 text-gray-400 pointer-events-none" />
@@ -109,8 +157,19 @@ const Hero = () => {
               </div>
             </div>
 
-            <Button className="w-full md:w-auto mt-6 bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-semibold px-12 py-3">
-              SEARCH
+            <Button 
+              className="w-full md:w-auto mt-6 bg-yellow-400 hover:bg-yellow-500 text-slate-800 font-semibold px-12 py-3"
+              onClick={handleSearch}
+              disabled={searching}
+            >
+              {searching ? (
+                <>
+                  <SearchIcon className="w-4 h-4 mr-2 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                'SEARCH'
+              )}
             </Button>
           </CardContent>
         </Card>

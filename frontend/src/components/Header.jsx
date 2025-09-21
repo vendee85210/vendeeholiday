@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { Search, Menu, X } from 'lucide-react';
+import { Search, Menu, X, User, LogOut } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import LoginModal from './LoginModal';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <header className="bg-slate-800 text-white sticky top-0 z-50">
@@ -38,9 +46,39 @@ const Header = () => {
               <option>English</option>
               <option>Français</option>
             </select>
-            <a href="#login" className="hover:text-yellow-400 transition-colors">
-              Owner Login
-            </a>
+            
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>{user?.first_name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    My Bookings
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <LoginModal 
+                trigger={
+                  <Button variant="ghost" className="hover:text-yellow-400 transition-colors">
+                    Login
+                  </Button>
+                }
+              />
+            )}
+            
             <Search className="w-5 h-5 cursor-pointer hover:text-yellow-400 transition-colors" />
             <Button variant="outline" className="bg-yellow-400 text-slate-800 border-yellow-400 hover:bg-yellow-500">
               Shortlist
@@ -69,9 +107,28 @@ const Header = () => {
               <a href="#blog" className="hover:text-yellow-400 transition-colors">
                 Blog
               </a>
-              <a href="#login" className="hover:text-yellow-400 transition-colors">
-                Owner Login
-              </a>
+              
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <div className="text-yellow-400">Welcome, {user?.first_name}!</div>
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center space-x-2 hover:text-yellow-400 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              ) : (
+                <LoginModal 
+                  trigger={
+                    <Button variant="ghost" className="w-fit">
+                      Login
+                    </Button>
+                  }
+                />
+              )}
+              
               <Button variant="outline" className="bg-yellow-400 text-slate-800 border-yellow-400 hover:bg-yellow-500 w-fit">
                 Shortlist
               </Button>
