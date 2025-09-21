@@ -1,9 +1,55 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { blogPosts } from '../mock/data';
+import { blogAPI } from '../services/api';
 
 const Blog = () => {
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        const response = await blogAPI.getPosts({ limit: 4 });
+        setBlogPosts(response.data);
+      } catch (error) {
+        console.error('Error fetching blog posts:', error);
+        // Fallback to mock data if API fails
+        const { blogPosts: mockBlogPosts } = await import('../mock/data');
+        setBlogPosts(mockBlogPosts);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogPosts();
+  }, []);
+
+  if (loading) {
+    return (
+      <section id="blog" className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+              The French Lifestyle And Luxury Living Blog
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i} className="overflow-hidden animate-pulse">
+                <div className="w-full h-48 bg-gray-300"></div>
+                <CardContent className="p-4">
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-300 rounded w-3/4"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="blog" className="py-16 bg-white">
       <div className="container mx-auto px-4">
@@ -29,16 +75,31 @@ const Blog = () => {
             >
               <div className="relative">
                 <img 
-                  src={post.image}
+                  src={post.featured_image || post.image}
                   alt={post.title}
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                {post.author && (
+                  <div className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-1 text-xs">
+                    By {post.author.first_name}
+                  </div>
+                )}
               </div>
               <CardContent className="p-4">
                 <h3 className="font-semibold text-sm leading-tight text-gray-800 group-hover:text-yellow-600 transition-colors line-clamp-3">
                   {post.title}
                 </h3>
+                {post.excerpt && (
+                  <p className="text-xs text-gray-600 mt-2 line-clamp-2">
+                    {post.excerpt}
+                  </p>
+                )}
+                {post.published_at && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    {new Date(post.published_at).toLocaleDateString()}
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}

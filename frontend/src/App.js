@@ -1,6 +1,8 @@
 import React from "react";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "./components/ui/toaster";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import SpecialOffers from "./components/SpecialOffers";
@@ -14,10 +16,16 @@ import WhyBookWithUs from "./components/WhyBookWithUs";
 import Footer from "./components/Footer";
 
 const Home = () => {
+  const handleSearchResults = (results) => {
+    // Handle search results - could scroll to properties section
+    // or navigate to a search results page
+    console.log('Search results:', results);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <Hero />
+      <Hero onSearchResults={handleSearchResults} />
       <SpecialOffers />
       <Destinations />
       <About />
@@ -33,13 +41,16 @@ const Home = () => {
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+      </div>
+    </AuthProvider>
   );
 }
 
