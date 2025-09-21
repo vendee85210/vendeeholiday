@@ -83,8 +83,8 @@ async def init_sample_data():
     db = db_instance.database
     
     # Check if data already exists
-    user_count = await db.users.count_documents({})
-    if user_count > 0:
+    destination_count = await db.destinations.count_documents({})
+    if destination_count > 0:
         return  # Data already exists
     
     # Create sample destinations
